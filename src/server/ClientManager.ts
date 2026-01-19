@@ -1,9 +1,10 @@
 import debug from 'debug';
 import { hri } from 'human-readable-ids';
 
+import type { TunnelServer } from './TunnelServer.js';
+
 import { Client } from './Client.js';
 import { TunnelAgent } from './TunnelAgent.js';
-import type { TunnelServer } from './TunnelServer.js';
 
 export interface ClientManagerOptions {
   maxTcpSockets?: number;

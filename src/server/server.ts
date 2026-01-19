@@ -10,16 +10,16 @@ import { TunnelServer } from './TunnelServer.js';
 
 const log = debug('pipenet:server');
 
+export interface PipenetServer extends http.Server {
+  tunnelServer?: TunnelServer;
+}
+
 export interface ServerOptions {
   domains?: string[];
   landing?: string;
   maxTcpSockets?: number;
   secure?: boolean;
   tunnelPort?: number;
-}
-
-export interface PipenetServer extends http.Server {
-  tunnelServer?: TunnelServer;
 }
 
 export function createServer(opt: ServerOptions = {}): PipenetServer {
@@ -85,7 +85,7 @@ export function createServer(opt: ServerOptions = {}): PipenetServer {
   app.use(router.allowedMethods());
 
   // Helper to build response with tunnel port if configured
-  const buildResponse = (info: { id: string; port: number; maxConnCount?: number }, host: string) => {
+  const buildResponse = (info: { id: string; maxConnCount?: number; port: number; }, host: string) => {
     const url = schema + '://' + info.id + '.' + host;
     const response: Record<string, unknown> = { ...info, url };
     // If using shared tunnel server, override port and add sharedTunnel flag

@@ -24,6 +24,10 @@ export class TunnelServer {
     });
   }
 
+  close(): void {
+    this.server.close();
+  }
+
   listen(port: number, address?: string): Promise<void> {
     return new Promise((resolve) => {
       if (address) {
@@ -38,10 +42,6 @@ export class TunnelServer {
         });
       }
     });
-  }
-
-  close(): void {
-    this.server.close();
   }
 
   registerHandler(clientId: string, handler: SocketHandler): void {
