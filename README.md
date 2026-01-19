@@ -124,7 +124,3 @@ server.listen(3000, () => {
 pipenet is based on [localtunnel](https://github.com/localtunnel/localtunnel).
 
 Development of pipenet is sponsored by [glama.ai](https://glama.ai).
-
-## License
-
-MIT
