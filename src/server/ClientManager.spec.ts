@@ -11,22 +11,22 @@ describe('ClientManager', () => {
 
   it('should create a new client with random id', async () => {
     const manager = new ClientManager();
-    const client = await manager.newClient();
+    const client = await manager.newClient(undefined, 'http://test.example.com', 'example.com');
     expect(manager.hasClient(client.id)).toBe(true);
     manager.removeClient(client.id);
   });
 
   it('should create a new client with id', async () => {
     const manager = new ClientManager();
-    await manager.newClient('foobar');
+    await manager.newClient('foobar', 'http://foobar.example.com', 'example.com');
     expect(manager.hasClient('foobar')).toBe(true);
     manager.removeClient('foobar');
   });
 
   it('should create a new client with random id if previous exists', async () => {
     const manager = new ClientManager();
-    const clientA = await manager.newClient('foobar');
-    const clientB = await manager.newClient('foobar');
+    const clientA = await manager.newClient('foobar', 'http://foobar.example.com', 'example.com');
+    const clientB = await manager.newClient('foobar', 'http://foobar.example.com', 'example.com');
     expect(clientA.id).toBe('foobar');
     expect(manager.hasClient(clientB.id)).toBe(true);
     expect(clientB.id).not.toBe(clientA.id);
@@ -36,7 +36,7 @@ describe('ClientManager', () => {
 
   it('should remove client once it goes offline', async () => {
     const manager = new ClientManager();
-    const client = await manager.newClient('foobar');
+    const client = await manager.newClient('foobar', 'http://foobar.example.com', 'example.com');
 
     const socket = await new Promise<net.Socket>((resolve) => {
       const netClient = net.createConnection({ port: client.port }, () => {
@@ -57,8 +57,8 @@ describe('ClientManager', () => {
 
   it('should remove correct client once it goes offline', async () => {
     const manager = new ClientManager();
-    const clientFoo = await manager.newClient('foo');
-    await manager.newClient('bar');
+    const clientFoo = await manager.newClient('foo', 'http://foo.example.com', 'example.com');
+    await manager.newClient('bar', 'http://bar.example.com', 'example.com');
 
     const socket = await new Promise<net.Socket>((resolve) => {
       const netClient = net.createConnection({ port: clientFoo.port }, () => {
@@ -80,7 +80,7 @@ describe('ClientManager', () => {
 
   it('should remove clients if they do not connect within 5 seconds', async () => {
     const manager = new ClientManager();
-    await manager.newClient('foo');
+    await manager.newClient('foo', 'http://foo.example.com', 'example.com');
     expect(manager.hasClient('foo')).toBe(true);
 
     // wait past grace period (1s)
