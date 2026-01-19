@@ -6,8 +6,6 @@ Expose your local server to the public internet instantly
 
 ```bash
 npm install pipenet
-# or
-pnpm add pipenet
 ```
 
 ## CLI Usage
@@ -104,11 +102,22 @@ npx pipenet server --port 3000 --tunnel-port 3001 --domain tunnel.example.com
 import { createServer } from 'pipenet/server';
 
 const server = createServer({
-  domains: ['tunnel.example.com'],  // Optional: custom domain(s)
+  domains: ['tunnel.example.com'],   // Optional: custom domain(s)
   secure: false,                     // Optional: require HTTPS
   landing: 'https://pipenet.dev',    // Optional: landing page URL
   maxTcpSockets: 10,                 // Optional: max sockets per client
   tunnelPort: 3001,                  // Optional: shared tunnel port for cloud deployments
+
+  // Lifecycle hooks for tracking tunnels and requests
+  onTunnelCreated: (tunnel) => {
+    console.log(`Tunnel created: ${tunnel.id} at ${tunnel.url}`);
+  },
+  onTunnelClosed: (tunnel) => {
+    console.log(`Tunnel closed: ${tunnel.id}`);
+  },
+  onRequest: (request) => {
+    console.log(`Request: ${request.method} ${request.path} via ${request.tunnelId}`);
+  },
 });
 
 // Start tunnel server if using shared tunnel port
@@ -128,6 +137,18 @@ server.listen(3000, () => {
 - `landing` (string) URL to redirect root requests to
 - `maxTcpSockets` (number) Maximum number of TCP sockets per client (default: 10)
 - `tunnelPort` (number) Shared tunnel port for cloud deployments (enables single-port mode)
+
+### Server Hooks
+
+The server supports lifecycle hooks for tracking tunnels and requests:
+
+- `onTunnelCreated(tunnel)` - Called when a new tunnel is created. Receives `{ id, url, domain }`.
+- `onTunnelClosed(tunnel)` - Called when a tunnel is closed. Receives `{ id, url, domain }`.
+- `onRequest(request)` - Called when a request is proxied through a tunnel. Receives `{ method, path, tunnelId, headers, remoteAddress }`.
+
+The `domain` field identifies which configured domain was used when the tunnel was created, which is useful when running a server with multiple domains.
+
+The `onRequest` hook provides access to request headers and the client's remote IP address, useful for logging, rate limiting, or authentication.
 
 ### Server API Endpoints
 

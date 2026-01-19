@@ -1,7 +1,9 @@
 import net from 'net';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
+
+import type { RequestInfo, TunnelInfo } from './server.js';
 
 import { createServer } from './server.js';
 
@@ -135,5 +137,135 @@ describe('Server', () => {
 
     expect(res.statusCode).toBe(204);
     expect(res.headers['access-control-allow-origin']).toBe('*');
+  });
+
+  describe('hooks', () => {
+    it('should call onTunnelCreated when a tunnel is created', async () => {
+      const onTunnelCreated = vi.fn<(tunnel: TunnelInfo) => void>();
+      const server = createServer({ onTunnelCreated });
+      await new Promise<void>(resolve => server.listen(resolve));
+
+      await request(server).get('/test-tunnel');
+
+      expect(onTunnelCreated).toHaveBeenCalledTimes(1);
+      expect(onTunnelCreated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domain: expect.any(String),
+          id: 'test-tunnel',
+          url: expect.stringContaining('test-tunnel'),
+        })
+      );
+
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    });
+
+    it('should include domain in tunnel hooks', async () => {
+      const onTunnelCreated = vi.fn<(tunnel: TunnelInfo) => void>();
+      const server = createServer({
+        domains: ['tunnel.example.com'],
+        onTunnelCreated,
+      });
+      await new Promise<void>(resolve => server.listen(resolve));
+
+      await request(server)
+        .get('/domain-test')
+        .set('Host', 'tunnel.example.com');
+
+      expect(onTunnelCreated).toHaveBeenCalledTimes(1);
+      expect(onTunnelCreated).toHaveBeenCalledWith({
+        domain: 'tunnel.example.com',
+        id: 'domain-test',
+        url: 'http://domain-test.tunnel.example.com',
+      });
+
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    });
+
+    it('should call onTunnelClosed when a tunnel is closed', async () => {
+      const onTunnelCreated = vi.fn<(tunnel: TunnelInfo) => void>();
+      const onTunnelClosed = vi.fn<(tunnel: TunnelInfo) => void>();
+      const server = createServer({ onTunnelClosed, onTunnelCreated });
+      await new Promise<void>(resolve => server.listen(resolve));
+
+      const res = await request(server).get('/close-test');
+      const localTunnelPort = res.body.port;
+
+      // Connect a socket to activate the tunnel
+      const socket = net.createConnection({ port: localTunnelPort });
+      await new Promise<void>(resolve => socket.once('connect', resolve));
+
+      expect(onTunnelCreated).toHaveBeenCalledTimes(1);
+      expect(onTunnelClosed).not.toHaveBeenCalled();
+
+      // Close the socket to trigger tunnel close
+      socket.destroy();
+
+      // Wait for the close event to propagate (Client has a 1s grace timeout after offline)
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      expect(onTunnelClosed).toHaveBeenCalledTimes(1);
+      expect(onTunnelClosed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domain: expect.any(String),
+          id: 'close-test',
+          url: expect.stringContaining('close-test'),
+        })
+      );
+
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    }, 5000);
+
+    it('should call onRequest when a request is proxied', async () => {
+      const onRequest = vi.fn<(request: RequestInfo) => void>();
+      const server = createServer({
+        domains: ['example.com'],
+        onRequest,
+      });
+      await new Promise<void>(resolve => server.listen(resolve));
+
+      // Create a tunnel
+      const res = await request(server).get('/request-test');
+      const localTunnelPort = res.body.port;
+
+      // Create a simple echo server
+      const echoServer = net.createServer((socket) => {
+        socket.on('data', () => {
+          const response = 'HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK';
+          socket.write(response);
+        });
+      });
+      await new Promise<void>(resolve => echoServer.listen(0, resolve));
+      const echoPort = (echoServer.address() as net.AddressInfo).port;
+
+      // Connect tunnel socket to echo server
+      const ltSocket = net.createConnection({ port: localTunnelPort });
+      const echoSocket = net.createConnection({ port: echoPort });
+      await Promise.all([
+        new Promise<void>(resolve => ltSocket.once('connect', resolve)),
+        new Promise<void>(resolve => echoSocket.once('connect', resolve)),
+      ]);
+      ltSocket.pipe(echoSocket).pipe(ltSocket);
+
+      // Make a request through the tunnel
+      await request(server)
+        .get('/some/path')
+        .set('Host', 'request-test.example.com');
+
+      expect(onRequest).toHaveBeenCalledTimes(1);
+      expect(onRequest).toHaveBeenCalledWith({
+        headers: expect.objectContaining({
+          host: 'request-test.example.com',
+        }),
+        method: 'GET',
+        path: '/some/path',
+        remoteAddress: expect.any(String),
+        tunnelId: 'request-test',
+      });
+
+      ltSocket.destroy();
+      echoSocket.destroy();
+      echoServer.close();
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    });
   });
 });

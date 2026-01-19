@@ -14,12 +14,43 @@ export interface PipenetServer extends http.Server {
   tunnelServer?: TunnelServer;
 }
 
-export interface ServerOptions {
+export interface RequestInfo {
+  headers: Record<string, string | string[] | undefined>;
+  method: string;
+  path: string;
+  remoteAddress?: string;
+  tunnelId: string;
+}
+
+export interface ServerHooks {
+  /**
+   * Called when a request is proxied through a tunnel
+   */
+  onRequest?: (request: RequestInfo) => void;
+
+  /**
+   * Called when a tunnel is closed
+   */
+  onTunnelClosed?: (tunnel: TunnelInfo) => void;
+
+  /**
+   * Called when a new tunnel is created
+   */
+  onTunnelCreated?: (tunnel: TunnelInfo) => void;
+}
+
+export interface ServerOptions extends ServerHooks {
   domains?: string[];
   landing?: string;
   maxTcpSockets?: number;
   secure?: boolean;
   tunnelPort?: number;
+}
+
+export interface TunnelInfo {
+  domain: string;
+  id: string;
+  url: string;
 }
 
 export function createServer(opt: ServerOptions = {}): PipenetServer {
@@ -84,10 +115,20 @@ export function createServer(opt: ServerOptions = {}): PipenetServer {
   app.use(router.routes());
   app.use(router.allowedMethods());
 
+  // Helper to extract domain from host (strips port if present)
+  const getDomain = (host: string) => {
+    // Remove port if present (e.g., "localhost:3000" -> "localhost")
+    return host.split(':')[0];
+  };
+
+  // Helper to build the tunnel URL
+  const buildUrl = (id: string, host: string) => {
+    return schema + '://' + id + '.' + host;
+  };
+
   // Helper to build response with tunnel port if configured
-  const buildResponse = (info: { id: string; maxConnCount?: number; port: number; }, host: string) => {
-    const url = schema + '://' + info.id + '.' + host;
-    const response: Record<string, unknown> = { ...info, url };
+  const buildResponse = (info: { domain: string; id: string; maxConnCount?: number; port: number; url: string }) => {
+    const response: Record<string, unknown> = { ...info };
     // If using shared tunnel server, override port and add sharedTunnel flag
     if (tunnelPort) {
       response.port = tunnelPort;
@@ -107,10 +148,12 @@ export function createServer(opt: ServerOptions = {}): PipenetServer {
     const isNewClientRequest = ctx.query['new'] !== undefined;
     if (isNewClientRequest) {
       const reqId = hri.random();
+      const domain = getDomain(ctx.request.host);
+      const url = buildUrl(reqId, ctx.request.host);
       log('making new client with id %s', reqId);
-      const info = await manager.newClient(reqId);
+      const info = await manager.newClient(reqId, url, domain);
 
-      ctx.body = buildResponse(info, ctx.request.host);
+      ctx.body = buildResponse(info);
       return;
     }
 
@@ -134,10 +177,12 @@ export function createServer(opt: ServerOptions = {}): PipenetServer {
       return;
     }
 
+    const domain = getDomain(ctx.request.host);
+    const url = buildUrl(reqId, ctx.request.host);
     log('making new client with id %s', reqId);
-    const info = await manager.newClient(reqId);
+    const info = await manager.newClient(reqId, url, domain);
 
-    ctx.body = buildResponse(info, ctx.request.host);
+    ctx.body = buildResponse(info);
   });
 
   const server: PipenetServer = http.createServer();
@@ -164,6 +209,17 @@ export function createServer(opt: ServerOptions = {}): PipenetServer {
       res.statusCode = 404;
       res.end('404');
       return;
+    }
+
+    // Call the onRequest hook
+    if (opt.onRequest) {
+      opt.onRequest({
+        headers: req.headers,
+        method: req.method || 'GET',
+        path: req.url || '/',
+        remoteAddress: req.socket.remoteAddress,
+        tunnelId: clientId,
+      });
     }
 
     client.handleRequest(req, res);
