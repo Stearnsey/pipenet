@@ -99,8 +99,9 @@ function runServer(opts: ServerOptions) {
 yargs(hideBin(process.argv))
   .usage('Usage: pipenet <command> [options]')
   .env(true)
+  .demandCommand(1, 'You must specify a command: client or server')
   .command(
-    ['$0', 'client'],
+    'client',
     'Start a tunnel client',
     (yargs) => {
       return yargs

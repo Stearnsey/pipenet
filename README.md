@@ -14,13 +14,13 @@ pnpm add pipenet
 
 ```bash
 # Expose local port 3000 to the internet
-npx pipenet --port 3000
+npx pipenet client --port 3000
 
 # Request a specific subdomain
-npx pipenet --port 3000 --subdomain myapp
+npx pipenet client --port 3000 --subdomain myapp
 
 # Use a custom tunnel server
-npx pipenet --port 3000 --host https://your-tunnel-server.com
+npx pipenet client --port 3000 --host https://your-tunnel-server.com
 ```
 
 ## API
@@ -97,7 +97,7 @@ import { createServer } from 'pipenet/server';
 const server = createServer({
   domain: 'tunnel.example.com',  // Optional: custom domain
   secure: false,                  // Optional: require HTTPS
-  landing: 'https://example.com', // Optional: landing page URL
+  landing: 'https://pipenet.dev', // Optional: landing page URL
   max_tcp_sockets: 10,            // Optional: max sockets per client
 });
 
