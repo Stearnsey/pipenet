@@ -5,35 +5,48 @@ import http from 'http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import pipenet from './pipenet.js';
+import { createServer } from './server/server.js';
 
 describe('pipenet', () => {
-  const host = 'https://pipenet.dev';
+  let host: string;
+  let fakePort: number;
+  let tunnelServer: http.Server;
 
-let fakePort: number;
+  const localServer = http.createServer();
 
-const server = http.createServer();
-
-beforeAll(async () => {
-  return new Promise<void>((resolve) => {
-    server.on('request', (req, res) => {
-      res.write(req.headers.host);
-      res.end();
+  beforeAll(async () => {
+    // Start the local HTTP server that will be tunneled
+    await new Promise<void>((resolve) => {
+      localServer.on('request', (req, res) => {
+        res.write(req.headers.host);
+        res.end();
+      });
+      localServer.listen(() => {
+        const addr = localServer.address() as AddressInfo;
+        fakePort = addr.port;
+        resolve();
+      });
     });
-    server.listen(() => {
-      const addr = server.address() as AddressInfo;
-      fakePort = addr.port;
-      resolve();
+
+    // Start a local tunnel server for testing
+    tunnelServer = createServer({ domain: 'localhost' });
+    await new Promise<void>((resolve) => {
+      tunnelServer.listen(() => {
+        const addr = tunnelServer.address() as AddressInfo;
+        host = `http://localhost:${addr.port}`;
+        resolve();
+      });
     });
   });
-});
 
-afterAll(() => {
-  server.close();
-});
+  afterAll(() => {
+    localServer.close();
+    tunnelServer.close();
+  });
 
 it('query pipenet server w/ ident', async () => {
   const tunnel = await pipenet(fakePort, { host });
-  expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.pipenet\.dev$/);
+  expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.localhost:\d+$/);
 
   const parsed = new URL(tunnel.url!);
   const response = await axios.get(`${tunnel.url}/`);
@@ -45,14 +58,14 @@ it('query pipenet server w/ ident', async () => {
 it('request specific domain', async () => {
   const subdomain = Math.random().toString(36).substring(2);
   const tunnel = await pipenet(fakePort, { host, subdomain });
-  expect(tunnel.url).toMatch(new RegExp(`^https?://${subdomain}\\.pipenet\\.dev$`));
+  expect(tunnel.url).toMatch(new RegExp(`^https?://${subdomain}\\.localhost:\\d+$`));
   tunnel.close();
 });
 
 describe('--local-host localhost', () => {
   it('override Host header with local-host', async () => {
     const tunnel = await pipenet(fakePort, { host, local_host: 'localhost' });
-    expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.pipenet\.dev$/);
+    expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.localhost:\d+$/);
 
     const response = await axios.get(`${tunnel.url}/`);
     expect(response.data).toBe('localhost');
@@ -63,7 +76,7 @@ describe('--local-host localhost', () => {
 describe('--local-host 127.0.0.1', () => {
   it('override Host header with local-host', async () => {
     const tunnel = await pipenet(fakePort, { host, local_host: '127.0.0.1' });
-    expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.pipenet\.dev$/);
+    expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.localhost:\d+$/);
 
     const response = await axios.get(`${tunnel.url}/`);
     expect(response.data).toBe('127.0.0.1');
@@ -78,7 +91,7 @@ describe('custom headers', () => {
       'X-Custom-Header': 'test-value',
     };
     const tunnel = await pipenet(fakePort, { headers: customHeaders, host });
-    expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.pipenet\.dev$/);
+    expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.localhost:\d+$/);
     tunnel.close();
   });
 });
