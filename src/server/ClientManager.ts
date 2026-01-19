@@ -1,5 +1,5 @@
-import { hri } from 'human-readable-ids';
 import debug from 'debug';
+import { hri } from 'human-readable-ids';
 
 import { Client } from './Client.js';
 import { TunnelAgent } from './TunnelAgent.js';
@@ -10,21 +10,29 @@ export interface ClientManagerOptions {
 
 export interface NewClientInfo {
   id: string;
-  port: number;
   max_conn_count?: number;
+  port: number;
 }
 
 export class ClientManager {
-  private opt: ClientManagerOptions;
-  private clients: Map<string, Client>;
   public stats: { tunnels: number };
+  private clients: Map<string, Client>;
   private log: debug.Debugger;
+  private opt: ClientManagerOptions;
 
   constructor(opt: ClientManagerOptions = {}) {
     this.opt = opt;
     this.clients = new Map();
     this.stats = { tunnels: 0 };
     this.log = debug('lt:ClientManager');
+  }
+
+  getClient(id: string): Client | undefined {
+    return this.clients.get(id);
+  }
+
+  hasClient(id: string): boolean {
+    return this.clients.has(id);
   }
 
   async newClient(requestedId?: string): Promise<NewClientInfo> {
@@ -41,7 +49,7 @@ export class ClientManager {
       maxTcpSockets: 10,
     });
 
-    const client = new Client({ id, agent });
+    const client = new Client({ agent, id });
 
     this.clients.set(id, client);
 
@@ -54,8 +62,8 @@ export class ClientManager {
       ++this.stats.tunnels;
       return {
         id: id,
-        port: info.port,
         max_conn_count: maxSockets,
+        port: info.port,
       };
     } catch (err) {
       this.removeClient(id);
@@ -70,13 +78,5 @@ export class ClientManager {
     --this.stats.tunnels;
     this.clients.delete(id);
     client.close();
-  }
-
-  hasClient(id: string): boolean {
-    return this.clients.has(id);
-  }
-
-  getClient(id: string): Client | undefined {
-    return this.clients.get(id);
   }
 }

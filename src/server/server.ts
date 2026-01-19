@@ -1,9 +1,9 @@
-import Koa from 'koa';
-import tldjs from 'tldjs';
 import debug from 'debug';
 import http from 'http';
 import { hri } from 'human-readable-ids';
+import Koa from 'koa';
 import Router from 'koa-router';
+import tldjs from 'tldjs';
 
 import { ClientManager } from './ClientManager.js';
 
@@ -11,9 +11,9 @@ const log = debug('pipenet:server');
 
 export interface ServerOptions {
   domain?: string;
-  secure?: boolean;
   landing?: string;
   max_tcp_sockets?: number;
+  secure?: boolean;
 }
 
 export function createServer(opt: ServerOptions = {}): http.Server {
@@ -21,7 +21,7 @@ export function createServer(opt: ServerOptions = {}): http.Server {
   const myTldjs = tldjs.fromUserSettings({ validHosts });
   const landingPage = opt.landing || 'https://pipenet.dev/';
 
-  function GetClientIdFromHostname(hostname: string): string | null {
+  function GetClientIdFromHostname(hostname: string): null | string {
     return myTldjs.getSubdomain(hostname);
   }
 
@@ -49,8 +49,8 @@ export function createServer(opt: ServerOptions = {}): http.Server {
   router.get('/api/status', async (ctx) => {
     const stats = manager.stats;
     ctx.body = {
-      tunnels: stats.tunnels,
       mem: process.memoryUsage(),
+      tunnels: stats.tunnels,
     };
   });
 
@@ -145,7 +145,7 @@ export function createServer(opt: ServerOptions = {}): http.Server {
     client.handleRequest(req, res);
   });
 
-  server.on('upgrade', (req, socket, _head) => {
+  server.on('upgrade', (req, socket) => {
     const hostname = req.headers.host;
     if (!hostname) {
       socket.destroy();

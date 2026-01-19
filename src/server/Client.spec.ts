@@ -1,24 +1,35 @@
 import http from 'http';
-import { Duplex } from 'stream';
 import net from 'net';
-import { describe, it, expect } from 'vitest';
+import { Duplex } from 'stream';
+import { describe, expect, it } from 'vitest';
 
 import { Client } from './Client.js';
 import { TunnelAgent } from './TunnelAgent.js';
 
-class DummySocket extends Duplex {
-  _write(chunk: Buffer, encoding: BufferEncoding, callback: () => void) {
-    callback();
+class DummyAgent extends http.Agent {
+  createConnection(options: object, cb: (err: Error | null, socket: Duplex) => void) {
+    cb(null, new DummySocket());
+    return new DummySocket();
   }
+}
 
-  _read(_size: number) {
+class DummySocket extends Duplex {
+  _read() {
     this.push('HTTP/1.1 304 Not Modified\r\nX-Powered-By: dummy\r\n\r\n\r\n');
     this.push(null);
+  }
+
+  _write(chunk: Buffer, encoding: BufferEncoding, callback: () => void) {
+    callback();
   }
 }
 
 class DummyWebsocket extends Duplex {
   private sentHeader = false;
+
+  _read() {
+    // nothing to implement
+  }
 
   _write(chunk: Buffer, encoding: BufferEncoding, callback: () => void) {
     const str = chunk.toString();
@@ -33,17 +44,6 @@ class DummyWebsocket extends Duplex {
       this.push(str);
     }
     callback();
-  }
-
-  _read(_size: number) {
-    // nothing to implement
-  }
-}
-
-class DummyAgent extends http.Agent {
-  createConnection(options: object, cb: (err: Error | null, socket: Duplex) => void) {
-    cb(null, new DummySocket());
-    return new DummySocket();
   }
 }
 
@@ -61,8 +61,8 @@ describe('Client', () => {
     const address = server.address() as net.AddressInfo;
     const opt = {
       host: 'localhost',
-      port: address.port,
       path: '/',
+      port: address.port,
     };
 
     const res = await new Promise<http.IncomingMessage>((resolve) => {
@@ -87,7 +87,7 @@ describe('Client', () => {
     const client = new Client({ agent });
 
     const server = http.createServer();
-    server.on('upgrade', (req, socket, _head) => {
+    server.on('upgrade', (req, socket) => {
       client.handleUpgrade(req, socket);
     });
 

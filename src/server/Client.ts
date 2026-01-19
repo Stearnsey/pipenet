@@ -1,9 +1,10 @@
-import http from 'http';
-import debug from 'debug';
-import pump from 'pump';
-import { EventEmitter } from 'events';
-
 import type { Duplex } from 'stream';
+
+import debug from 'debug';
+import { EventEmitter } from 'events';
+import http from 'http';
+import pump from 'pump';
+
 import type { TunnelAgent } from './TunnelAgent.js';
 
 export interface ClientOptions {
@@ -14,8 +15,8 @@ export interface ClientOptions {
 export class Client extends EventEmitter {
   public id?: string;
   private agent: TunnelAgent;
-  private log: debug.Debugger;
   private graceTimeout: NodeJS.Timeout;
+  private log: debug.Debugger;
 
   constructor(options: ClientOptions) {
     super();
@@ -47,10 +48,6 @@ export class Client extends EventEmitter {
     });
   }
 
-  stats() {
-    return this.agent.stats();
-  }
-
   close() {
     clearTimeout(this.graceTimeout);
     this.agent.destroy();
@@ -60,10 +57,10 @@ export class Client extends EventEmitter {
   handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
     this.log('> %s', req.url);
     const opt: http.RequestOptions = {
-      path: req.url,
       agent: this.agent as unknown as http.Agent,
-      method: req.method,
       headers: req.headers,
+      method: req.method,
+      path: req.url,
     };
 
     const clientReq = http.request(opt, (clientRes) => {
@@ -110,5 +107,9 @@ export class Client extends EventEmitter {
       pump(socket, conn);
       conn.write(arr.join('\r\n'));
     });
+  }
+
+  stats() {
+    return this.agent.stats();
   }
 }

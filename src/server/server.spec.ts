@@ -1,7 +1,7 @@
-import request from 'supertest';
-import { WebSocketServer, WebSocket } from 'ws';
 import net from 'net';
-import { describe, it, expect } from 'vitest';
+import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+import { WebSocket, WebSocketServer } from 'ws';
 
 import { createServer } from './server.js';
 

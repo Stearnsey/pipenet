@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events';
 import debug from 'debug';
+import { EventEmitter } from 'events';
 import fs from 'fs';
 import net from 'net';
 import tls from 'tls';
@@ -9,20 +9,20 @@ import { HeaderHostTransformer } from './HeaderHostTransformer.js';
 const log = debug('pipenet:client');
 
 export interface TunnelClusterOptions {
-  name?: string;
-  url?: string;
+  allow_invalid_cert?: boolean;
   cached_url?: string;
+  local_ca?: string;
+  local_cert?: string;
+  local_host?: string;
+  local_https?: boolean;
+  local_key?: string;
+  local_port?: number;
   max_conn?: number;
+  name?: string;
   remote_host?: string;
   remote_ip?: string;
   remote_port?: number;
-  local_port?: number;
-  local_host?: string;
-  local_https?: boolean;
-  local_cert?: string;
-  local_key?: string;
-  local_ca?: string;
-  allow_invalid_cert?: boolean;
+  url?: string;
 }
 
 export interface TunnelRequest {
@@ -97,9 +97,9 @@ export class TunnelCluster extends EventEmitter {
         allowInvalidCert
           ? { rejectUnauthorized: false }
           : {
+              ca: opt.local_ca ? [fs.readFileSync(opt.local_ca)] : undefined,
               cert: fs.readFileSync(opt.local_cert!),
               key: fs.readFileSync(opt.local_key!),
-              ca: opt.local_ca ? [fs.readFileSync(opt.local_ca)] : undefined,
             };
 
       const local = opt.local_https

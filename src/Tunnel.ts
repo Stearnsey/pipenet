@@ -1,58 +1,58 @@
-import { EventEmitter } from 'events';
 import axios from 'axios';
 import debug from 'debug';
+import { EventEmitter } from 'events';
 
 import { TunnelCluster, TunnelClusterOptions } from './TunnelCluster.js';
 
 const log = debug('pipenet:client');
 
 export interface TunnelOptions {
-  port?: number;
-  host?: string;
-  subdomain?: string;
-  local_host?: string;
-  local_https?: boolean;
-  local_cert?: string;
-  local_key?: string;
-  local_ca?: string;
   allow_invalid_cert?: boolean;
   headers?: Record<string, string>;
-}
-
-interface TunnelInfo extends TunnelClusterOptions {
-  name: string;
-  url: string;
-  cached_url?: string;
-  max_conn: number;
-  remote_host: string;
-  remote_ip: string;
-  remote_port: number;
-  local_port?: number;
+  host?: string;
+  local_ca?: string;
+  local_cert?: string;
   local_host?: string;
   local_https?: boolean;
-  local_cert?: string;
   local_key?: string;
-  local_ca?: string;
-  allow_invalid_cert?: boolean;
+  port?: number;
+  subdomain?: string;
 }
 
 interface ServerResponse {
+  cached_url?: string;
   id: string;
   ip: string;
-  port: number;
-  url: string;
-  cached_url?: string;
   max_conn_count?: number;
   message?: string;
+  port: number;
+  url: string;
+}
+
+interface TunnelInfo extends TunnelClusterOptions {
+  allow_invalid_cert?: boolean;
+  cached_url?: string;
+  local_ca?: string;
+  local_cert?: string;
+  local_host?: string;
+  local_https?: boolean;
+  local_key?: string;
+  local_port?: number;
+  max_conn: number;
+  name: string;
+  remote_host: string;
+  remote_ip: string;
+  remote_port: number;
+  url: string;
 }
 
 export class Tunnel extends EventEmitter {
-  public opts: TunnelOptions;
-  public closed: boolean;
-  public clientId?: string;
-  public url?: string;
   public cachedUrl?: string;
+  public clientId?: string;
+  public closed: boolean;
+  public opts: TunnelOptions;
   public tunnelCluster?: TunnelCluster;
+  public url?: string;
 
   constructor(opts: TunnelOptions = {}) {
     super();
@@ -63,63 +63,28 @@ export class Tunnel extends EventEmitter {
     }
   }
 
-  private _getInfo(body: ServerResponse): TunnelInfo {
-    const { id, ip, port, url, cached_url, max_conn_count } = body;
-    const { host, port: local_port, local_host } = this.opts;
-    const { local_https, local_cert, local_key, local_ca, allow_invalid_cert } = this.opts;
-    
-    return {
-      name: id,
-      url,
-      cached_url,
-      max_conn: max_conn_count || 1,
-      remote_host: new URL(host!).hostname,
-      remote_ip: ip,
-      remote_port: port,
-      local_port,
-      local_host,
-      local_https,
-      local_cert,
-      local_key,
-      local_ca,
-      allow_invalid_cert,
-    };
+  close(): void {
+    this.closed = true;
+    this.emit('close');
   }
 
-  private _init(cb: (err: Error | null, info?: TunnelInfo) => void): void {
-    const opt = this.opts;
-    const getInfo = this._getInfo.bind(this);
+  open(cb: (err?: Error) => void): void {
+    this._init((err, info) => {
+      if (err) {
+        cb(err);
+        return;
+      }
 
-    const params = {
-      responseType: 'json' as const,
-      headers: opt.headers || {},
-    };
+      this.clientId = info!.name;
+      this.url = info!.url;
 
-    const baseUri = `${opt.host}/`;
-    const assignedDomain = opt.subdomain;
-    const uri = baseUri + (assignedDomain || '?new');
+      if (info!.cached_url) {
+        this.cachedUrl = info!.cached_url;
+      }
 
-    const getUrl = (): void => {
-      axios
-        .get<ServerResponse>(uri, params)
-        .then((res) => {
-          const body = res.data;
-          log('got tunnel information', res.data);
-          if (res.status !== 200) {
-            const err = new Error(
-              body?.message || 'pipenet server returned an error, please try again'
-            );
-            return cb(err);
-          }
-          cb(null, getInfo(body));
-        })
-        .catch((err: Error) => {
-          log(`tunnel server offline: ${err.message}, retry 1s`);
-          setTimeout(getUrl, 1000);
-        });
-    };
-
-    getUrl();
+      this._establish(info!);
+      cb();
+    });
   }
 
   private _establish(info: TunnelInfo): void {
@@ -175,28 +140,63 @@ export class Tunnel extends EventEmitter {
     }
   }
 
-  open(cb: (err?: Error) => void): void {
-    this._init((err, info) => {
-      if (err) {
-        cb(err);
-        return;
-      }
-
-      this.clientId = info!.name;
-      this.url = info!.url;
-
-      if (info!.cached_url) {
-        this.cachedUrl = info!.cached_url;
-      }
-
-      this._establish(info!);
-      cb();
-    });
+  private _getInfo(body: ServerResponse): TunnelInfo {
+    const { cached_url, id, ip, max_conn_count, port, url } = body;
+    const { host, local_host, port: local_port } = this.opts;
+    const { allow_invalid_cert, local_ca, local_cert, local_https, local_key } = this.opts;
+    
+    return {
+      allow_invalid_cert,
+      cached_url,
+      local_ca,
+      local_cert,
+      local_host,
+      local_https,
+      local_key,
+      local_port,
+      max_conn: max_conn_count || 1,
+      name: id,
+      remote_host: new URL(host!).hostname,
+      remote_ip: ip,
+      remote_port: port,
+      url,
+    };
   }
 
-  close(): void {
-    this.closed = true;
-    this.emit('close');
+  private _init(cb: (err: Error | null, info?: TunnelInfo) => void): void {
+    const opt = this.opts;
+    const getInfo = this._getInfo.bind(this);
+
+    const params = {
+      headers: opt.headers || {},
+      responseType: 'json' as const,
+    };
+
+    const baseUri = `${opt.host}/`;
+    const assignedDomain = opt.subdomain;
+    const uri = baseUri + (assignedDomain || '?new');
+
+    const getUrl = (): void => {
+      axios
+        .get<ServerResponse>(uri, params)
+        .then((res) => {
+          const body = res.data;
+          log('got tunnel information', res.data);
+          if (res.status !== 200) {
+            const err = new Error(
+              body?.message || 'pipenet server returned an error, please try again'
+            );
+            return cb(err);
+          }
+          cb(null, getInfo(body));
+        })
+        .catch((err: Error) => {
+          log(`tunnel server offline: ${err.message}, retry 1s`);
+          setTimeout(getUrl, 1000);
+        });
+    };
+
+    getUrl();
   }
 }
 

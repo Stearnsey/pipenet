@@ -1,11 +1,13 @@
-import http from 'http';
 import type { AddressInfo } from 'net';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 import axios from 'axios';
+import http from 'http';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import pipenet from './pipenet.js';
 
-const host = 'https://pipenet.dev';
+describe('pipenet', () => {
+  const host = 'https://pipenet.dev';
 
 let fakePort: number;
 
@@ -75,8 +77,10 @@ describe('custom headers', () => {
       'User-Agent': 'CustomAgent/1.0',
       'X-Custom-Header': 'test-value',
     };
-    const tunnel = await pipenet(fakePort, { host, headers: customHeaders });
+    const tunnel = await pipenet(fakePort, { headers: customHeaders, host });
     expect(tunnel.url).toMatch(/^https?:\/\/[a-z0-9-]+\.pipenet\.dev$/);
     tunnel.close();
   });
+});
+
 });

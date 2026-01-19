@@ -1,9 +1,13 @@
+import debug from 'debug';
 import { Agent, ClientRequestArgs } from 'http';
 import net from 'net';
 import { Duplex } from 'stream';
-import debug from 'debug';
 
 const DEFAULT_MAX_SOCKETS = 10;
+
+export interface TunnelAgentListenInfo {
+  port: number;
+}
 
 export interface TunnelAgentOptions {
   clientId?: string;
@@ -14,21 +18,17 @@ export interface TunnelAgentStats {
   connectedSockets: number;
 }
 
-export interface TunnelAgentListenInfo {
-  port: number;
-}
-
 type CreateConnectionCallback = (err: Error | null, socket: Duplex) => void;
 
 export class TunnelAgent extends Agent {
+  public started: boolean;
   private availableSockets: net.Socket[];
-  private waitingCreateConn: CreateConnectionCallback[];
-  private log: debug.Debugger;
+  private closed: boolean;
   private connectedSockets: number;
+  private log: debug.Debugger;
   private maxTcpSockets: number;
   private server: net.Server;
-  public started: boolean;
-  private closed: boolean;
+  private waitingCreateConn: CreateConnectionCallback[];
 
   constructor(options: TunnelAgentOptions = {}) {
     super({ keepAlive: true, maxFreeSockets: 1 });
@@ -42,8 +42,27 @@ export class TunnelAgent extends Agent {
     this.closed = false;
   }
 
-  stats(): TunnelAgentStats {
-    return { connectedSockets: this.connectedSockets };
+  createConnection(options: ClientRequestArgs, cb?: CreateConnectionCallback): Duplex | null | undefined {
+    if (this.closed) {
+      cb?.(new Error('closed'), null as unknown as Duplex);
+      return null;
+    }
+    this.log('create connection');
+    const sock = this.availableSockets.shift();
+    if (!sock) {
+      if (cb) this.waitingCreateConn.push(cb);
+      this.log('waiting connected: %s', this.connectedSockets);
+      this.log('waiting available: %s', this.availableSockets.length);
+      return undefined;
+    }
+    this.log('socket given');
+    cb?.(null, sock);
+    return sock;
+  }
+
+  destroy(): void {
+    this.server.close();
+    super.destroy();
   }
 
   listen(): Promise<TunnelAgentListenInfo> {
@@ -64,6 +83,10 @@ export class TunnelAgent extends Agent {
         resolve({ port: addr.port });
       });
     });
+  }
+
+  stats(): TunnelAgentStats {
+    return { connectedSockets: this.connectedSockets };
   }
 
   private _onClose(): void {
@@ -108,28 +131,5 @@ export class TunnelAgent extends Agent {
       return;
     }
     this.availableSockets.push(socket);
-  }
-
-  createConnection(options: ClientRequestArgs, cb?: CreateConnectionCallback): Duplex | null | undefined {
-    if (this.closed) {
-      cb?.(new Error('closed'), null as unknown as Duplex);
-      return null;
-    }
-    this.log('create connection');
-    const sock = this.availableSockets.shift();
-    if (!sock) {
-      if (cb) this.waitingCreateConn.push(cb);
-      this.log('waiting connected: %s', this.connectedSockets);
-      this.log('waiting available: %s', this.availableSockets.length);
-      return undefined;
-    }
-    this.log('socket given');
-    cb?.(null, sock);
-    return sock;
-  }
-
-  destroy(): void {
-    this.server.close();
-    super.destroy();
   }
 }

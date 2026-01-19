@@ -1,5 +1,5 @@
 import net from 'net';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { ClientManager } from './ClientManager.js';
 
