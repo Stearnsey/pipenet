@@ -6,9 +6,27 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig(
   eslint.configs.recommended,
-  tseslint.configs.recommended,
   perfectionist.configs["recommended-alphabetical"],
   eslintConfigPrettier,
+  {
+    extends: [
+      tseslint.configs.recommended,
+    ],
+    rules: {
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          format: ["camelCase"],
+          selector: "property",
+        },
+        {
+          format: null,
+          modifiers: ["requiresQuotes"],
+          selector: "property",
+        },
+      ],
+    },
+  },
   {
     ignores: [
       "**/*.js",
