@@ -21,6 +21,7 @@ interface ClientOptions {
 }
 
 interface ServerOptions {
+  address?: string;
   domain?: string[];
   landing?: string;
   'max-sockets'?: number;
@@ -82,12 +83,21 @@ function runServer(opts: ServerOptions) {
     secure: opts.secure,
   });
 
-  server.listen(opts.port, () => {
+  const listenCallback = () => {
     console.log('pipenet server listening on port %d', opts.port);
+    if (opts.address) {
+      console.log('bound to address: %s', opts.address);
+    }
     if (opts.domain && opts.domain.length > 0) {
       console.log('tunnel domain(s): %s', opts.domain.join(', '));
     }
-  });
+  };
+
+  if (opts.address) {
+    server.listen(opts.port, opts.address, listenCallback);
+  } else {
+    server.listen(opts.port, listenCallback);
+  }
 
   process.on('SIGINT', () => {
     console.log('shutting down server...');
@@ -175,6 +185,11 @@ yargs(hideBin(process.argv))
           default: 3000,
           describe: 'Port for the server to listen on',
           type: 'number',
+        })
+        .option('address', {
+          alias: 'a',
+          describe: 'Address to bind the server to (e.g., 0.0.0.0)',
+          type: 'string',
         })
         .option('domain', {
           alias: 'd',
