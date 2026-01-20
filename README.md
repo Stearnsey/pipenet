@@ -223,6 +223,27 @@ pipenet is a modernized fork of [localtunnel](https://github.com/localtunnel/loc
 
 **Modern JavaScript**: pipenet uses ES modules and is written in TypeScript, providing better IDE support, type safety, and compatibility with modern JavaScript tooling.
 
+## pipenet vs zrok
+
+[zrok](https://zrok.io/) is a powerful tunneling solution with SDK support for Go, Python, and Node.js. However, zrok SDKs require the environment to be initialized via the CLI first - you can't just `npm install` and start tunneling.
+
+pipenet is designed for zero-setup embedding:
+
+```js
+import { pipenet } from 'pipenet';
+
+const tunnel = await pipenet({ port: 3000 });
+console.log(tunnel.url);
+```
+
+No CLI initialization, no external processes, no daemon - just a pure JavaScript library that works out of the box. This makes pipenet ideal for:
+
+- **CLI tools** that need tunneling as a feature (e.g., `mcp-proxy --tunnel`)
+- **Test suites** that need ephemeral public URLs
+- **Scripts** that should "just work" without setup steps
+
+If you need advanced features like TCP/UDP tunneling, identity management, or a managed SaaS, zrok is an excellent choice.
+
 ## Acknowledgments
 
 pipenet is based on [localtunnel](https://github.com/localtunnel/localtunnel).
